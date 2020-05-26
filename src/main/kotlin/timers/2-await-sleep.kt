@@ -1,20 +1,13 @@
 package timers
 
-fun sleep(msec: Long) {}
+import kotlinx.coroutines.*
+import java.util.*
 
-fun main() {
+private fun sleep(msec: Long) = GlobalScope.async { delay(msec) }
 
+suspend fun main() {
+    println("Start sleep: ${Date()}")
+    println("   Sleep about 3 sec")
+    sleep(3000).await()
+    println("After sleep: ${Date()}")
 }
-
-//'use strict';
-//
-//const sleep = msec => new Promise(resolve => {
-//    setTimeout(resolve, msec);
-//});
-//
-//(async () => {
-//    console.log('Start sleep: ' + new Date().toISOString());
-//    console.log('  Sleep about 3 sec');
-//    await sleep(3000);
-//    console.log('After sleep: ' + new Date().toISOString());
-//})();
