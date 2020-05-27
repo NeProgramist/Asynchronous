@@ -1,4 +1,4 @@
-package ee
+package EventEmitter
 
 interface Emitter<K> {
     fun on(name: String, fn: (K) -> Unit): Boolean

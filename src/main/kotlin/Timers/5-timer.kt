@@ -1,4 +1,4 @@
-package timers
+package Timers
 
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job

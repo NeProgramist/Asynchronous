@@ -1,4 +1,4 @@
-package ee
+package EventEmitter
 
 import kotlinx.coroutines.*
 
