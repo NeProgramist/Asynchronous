@@ -7,15 +7,13 @@ private fun setTimeout(msec: Long, cb: () -> Unit) = GlobalScope.launch {
     cb()
 }
 
-private fun setInterval(msec: Long, cb: () -> Unit): Job = GlobalScope.launch {
-    async {
-        delay(msec)
-        cb()
-    }.await()
-    setInterval(msec, cb)
+private tailrec suspend fun setInterval(msec: Long, cb: suspend () -> Unit) {
+    delay(msec)
+    cb()
+    return setInterval(msec, cb)
 }
 
-suspend fun main() {
+fun main() = runBlocking {
     setTimeout(0) { println("callback #1 setTimeout 0") }
     setTimeout(0) { println("callback #2 setTimeout 0") }
     setTimeout(1) { println("callback #3 setTimeout 1") }
@@ -24,9 +22,21 @@ suspend fun main() {
     println("callback #5 in main")
     println("callback #6 in main")
 
-    setInterval(0) { println("callback #7 setInterval 0") }.cancel()
-    setInterval(0) { println("callback #8 setInterval 0") }.cancel()
+    lateinit var job1: Job
+    job1 = launch {
+        setInterval(1) { // 0 causes StackOverflow as nothing really gets delayed
+            println("callback #7 setInterval 1")
+            job1.cancel()
+        }
+    }
 
-    delay(500)
-    println("Coroutines done")
+    lateinit var job2: Job
+    job2 = launch {
+        setInterval(1) {
+            println("callback #8 setInterval 1")
+            job2.cancel()
+        }
+    }
+
+    println("Main done")
 }

@@ -2,11 +2,12 @@ package ee
 
 import kotlinx.coroutines.*
 
-private class EventEmitter<K> {
+private class EventEmitter2<K> {
     private val events = mutableMapOf<String, MutableList<(K) -> Unit>>()
+    private val wrappers = mutableMapOf<(K) -> Unit, (K) -> Unit>()
     private val garbage = mutableListOf<(K) -> Unit>()
 
-    private fun clearGarbage(name: String) { // JVM cannot delete elements from collection while it's iterated
+    private fun clearGarbage(name: String) {
         val event = events[name] ?: return
         garbage.forEach { event.remove(it) }
     }
@@ -22,15 +23,22 @@ private class EventEmitter<K> {
     fun emit(name: String, data: K) = events[name]?.forEach { it(data) }.also { clearGarbage(name) }
 
     fun once(name: String, timeout: Long = 0, f: (K) -> Unit) {
-        lateinit var g: (K) -> Unit
-        g = {
-            garbage += g
+        lateinit var wrapper: (K) -> Unit
+        wrapper = {
+            garbage += wrapper
             f(it)
         }
-        on(name, timeout, g)
+
+        wrappers += f to wrapper
+        on(name, timeout, wrapper)
     }
 
-    fun remove(name: String, f: (K) -> Unit) = events[name]?.remove(f)
+    fun remove(name: String, f: (K) -> Unit) {
+        events[name]?.remove(f)
+        wrappers[f]?.let { events[name]?.remove(it) }
+        wrappers -= f
+    }
+
     fun clear(name: String? = null) = name?.let { events.remove(it) } ?: events.clear()
     fun count(name: String) = events[name]?.size ?: 0
     fun listeners(name: String) = events[name]?.run { subList(0, size) }
@@ -41,7 +49,7 @@ private class EventEmitter<K> {
 
 // Usage
 fun main() {
-    val ee = EventEmitter<String>()
+    val ee = EventEmitter2<String>()
 
     // on and emit
     ee.on("e1") { println(it) }

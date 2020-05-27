@@ -5,7 +5,7 @@ interface Emitter<K> {
     fun emit(name: String, data: K)
 }
 
-fun <K> emitter(): Emitter<K> {
+private fun <K> emitter(): Emitter<K> {
     val events = mutableMapOf<String, MutableList<(K) -> Unit>>()
 
     return object: Emitter<K> {
