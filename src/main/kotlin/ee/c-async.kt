@@ -1,21 +1,20 @@
 package ee
 
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.*
 
-class AsyncEmitter<T> {
+class AsyncEmitter<T>(private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)) {
     private val events = mutableMapOf<String, Events<T>>()
 
     private fun event(name: String) = events.getOrPut(name) { Events() }
     fun on(name: String, func: suspend (T) -> Unit) = event(name).on.add(func)
     fun once(name: String, func: suspend (T) -> Unit) = event(name).once.add(func)
 
-    suspend fun emit(name: String, data: T) = GlobalScope.launch {
-        val event = events[name] ?: return@launch
+    fun emit(name: String, data: T) {
+        val event = events[name] ?: return
 
-        event.on.forEach { launch { it(data) } }
-        event.once.asFlow().run {
-            collect { launch { it(data) } }
+        event.on.forEach { scope.launch { it(data) } }
+        event.once.run {
+            forEach { scope.launch { it(data) } }
             clear()
         }
         if (event.count() == 0) events.remove(name)
@@ -45,7 +44,7 @@ class AsyncEmitter<T> {
 }
 
 suspend fun main() {
-    val ee = AsyncEmitter<String>()
+    val ee = AsyncEmitter<String>(CoroutineScope(Dispatchers.Unconfined))
 
     // on and emit
     ee.on("e1") {
