@@ -11,11 +11,7 @@ fun main() {
 class EventEmitter<T> {
     private val events = mutableMapOf<String, MutableList<(T) -> Unit>>()
 
-    fun on(name: String, func: (T) -> Unit) {
-        if (events[name] == null) events[name] = mutableListOf(func)
-        else events[name]?.add(func)
-    }
-
-    fun emit(name: String, data: T) = events[name]?.forEach { it(data) }
+    fun on(name: String, func: (T) -> Unit) = events.getOrPut(name, { mutableListOf() }).add(func)
+    fun emit(name: String, data: T) = events[name]?.forEach { it(data) } ?: Unit
 }
 
