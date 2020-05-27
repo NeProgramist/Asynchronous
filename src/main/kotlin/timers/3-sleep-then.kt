@@ -12,7 +12,7 @@ suspend fun main() {
         println("end ${Date()}")
     }
 
-    delay(10000)
+    job.join()
 }
 
 private fun sleep(msec: Long) = GlobalScope.launch {
