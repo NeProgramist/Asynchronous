@@ -1,4 +1,4 @@
-package ee
+package EventEmitter
 
 fun main() {
     val ee = SimpleEmitter<String>()
