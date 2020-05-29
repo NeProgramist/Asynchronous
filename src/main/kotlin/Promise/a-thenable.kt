@@ -1,6 +1,5 @@
 package Promise
 
-import AsynchronousProgramming.Errback
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -17,11 +16,9 @@ class Thenable<T> {
     }
 
     fun resolve(value: T) {
-        println("fun $func")
-        val next = func?.let{ it(value) }
-        println("next $next")
-        if (next is Thenable<*>) next.then {
-            this.next?.resolve(it as T)
+        val n = func?.let{ it(value) }
+        if (n is Thenable<*>) n.then {
+            next?.resolve(it as T)
             Unit
         }
     }
@@ -30,13 +27,10 @@ class Thenable<T> {
 fun main() = runBlocking {
     fun readFile(filename: String): Thenable<String> {
         val thenable = Thenable<String>()
-        GlobalScope.launch {
+        launch {
             val text = File("$FILE_PATH/$filename").readText()
-            println("text - $text")
             thenable.resolve(text)
-            println("fuck")
         }
-        println("out")
         return thenable
     }
 
@@ -51,6 +45,6 @@ fun main() = runBlocking {
             println("file3: $it")
         }
 
-    delay(10000)
+    joinAll()
     return@runBlocking
 }
