@@ -6,11 +6,11 @@ import java.io.File
 fun main() = runBlocking {
     launch {
         withContext(Dispatchers.IO) {
-            File("src/main/kotlin/Promise/file1.txt").readText().also {println(it)}
+            File("$FILE_PATH/file1.txt").readText().also {println(it)}
             withContext(Dispatchers.IO) {
-                File("src/main/kotlin/Promise/file2.txt").readText().also {println(it)}
+                File("$FILE_PATH/file2.txt").readText().also {println(it)}
                 withContext(Dispatchers.IO) {
-                    File("src/main/kotlin/Promise/file3.txt").readText().also {println(it)}
+                    File("$FILE_PATH/file3.txt").readText().also {println(it)}
                 }
             }
         }
