@@ -1,6 +1,7 @@
 package Promise
 
 import kotlinx.coroutines.*
+import java.io.File
 
 private fun main() = runBlocking {
     // Active
@@ -43,7 +44,23 @@ private fun main() = runBlocking {
 
     // Example with I/O
 
+    val file1 = GlobalScope.async {
+        File("$FILE_PATH/file1.txt").readText()
+    }
+    val file2 = GlobalScope.async {
+        File("$FILE_PATH/file2.txt").readText()
+    }
+    val file3 = GlobalScope.async {
+        File("$FILE_PATH/file3.txt").readText()
+    }
 
+    println("file1 = $file1")
+    println("file2 = $file2")
+    println("file3 = $file3")
+    println("Waited:")
+    println("${file1.await()}, file1 = $file1")
+    println("${file2.await()}, file2 = $file1")
+    println("${file3.await()}, file3 = $file1")
 
     return@runBlocking
 }
