@@ -1,6 +1,7 @@
 package Promise
 
 import kotlinx.coroutines.*
+
 import java.io.File
 
 private fun main() = runBlocking {
@@ -43,6 +44,7 @@ private fun main() = runBlocking {
     }
 
     // Example with I/O
+
 
     val file1 = GlobalScope.async {
         File("$FILE_PATH/file1.txt").readText()
