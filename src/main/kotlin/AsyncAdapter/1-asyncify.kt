@@ -14,7 +14,7 @@ fun <T, K> asyncify(fn: (T) -> K) = { arg:T, callback: Errback<K> ->
     }
 }
 
-fun main() = runBlocking{
+private fun main() = runBlocking{
     val twice = { x: Float -> x*2 }
     val twiceAsync = asyncify(twice)
 
