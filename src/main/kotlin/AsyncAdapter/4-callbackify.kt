@@ -5,8 +5,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 
-typealias Suspback<T> = suspend (Throwable?, T?) -> Unit
-
 // Deferred-returning function callback-last / error-first
 fun <T, K> callbackify(fn: (T) -> Deferred<K>): suspend (T, Suspback<K>) -> Unit = { args, cb ->
     runCatching {
