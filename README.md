@@ -21,7 +21,7 @@ Implementation of [Asynchronous Programming](https://github.com/HowProgrammingWo
 - [Concurrent Queue](https://youtu.be/Lg46AH8wFvg);
     - [ ] ConcurrentQueue;
 - [Revealing Constructor](https://youtu.be/leR5sXRkuJI):
-    - [ ] RevealingConstructor;
+    - [x] [RevealingConstructor](src/main/kotlin/RevealingConstructor);
     - [x] Used in [Collector/3-class.kt](src/main/kotlin/Collector/3-class.kt);
 - [Futures](https://youtu.be/22ONv3AGXdk):
     - [ ] Future;

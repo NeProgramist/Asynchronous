@@ -14,4 +14,3 @@ class SimpleEmitter<T> {
     fun on(name: String, func: (T) -> Unit) = events.getOrPut(name, { mutableListOf() }).add(func)
     fun emit(name: String, data: T) = events[name]?.forEach { it(data) } ?: Unit
 }
-
