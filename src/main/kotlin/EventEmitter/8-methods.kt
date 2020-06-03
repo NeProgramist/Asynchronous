@@ -2,7 +2,7 @@ package EventEmitter
 
 import kotlinx.coroutines.*
 
-private class EventEmitter<K> {
+open class EventEmitter<K> {
     private val events = mutableMapOf<String, MutableList<(K) -> Unit>>()
     private val garbage = mutableListOf<(K) -> Unit>()
 
