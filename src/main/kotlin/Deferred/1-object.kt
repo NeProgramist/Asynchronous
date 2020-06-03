@@ -5,7 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
-interface Deferred<T> {
+private interface Deferred<T> {
     fun done(callback: (T) -> Unit): Deferred<T>
     fun resolve(data: T): Deferred<T>
 }
