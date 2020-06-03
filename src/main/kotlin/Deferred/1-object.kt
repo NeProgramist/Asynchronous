@@ -5,21 +5,21 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
-private interface Deferred<T> {
-    fun done(callback: (T) -> Unit): Deferred<T>
-    fun resolve(data: T): Deferred<T>
+interface PrimaryDeferred<T> {
+    fun done(callback: (T) -> Unit): PrimaryDeferred<T>
+    fun resolve(data: T): PrimaryDeferred<T>
 }
 
-private fun <T: Any> asyncResult() = object:  Deferred<T> {
+private fun <T: Any> asyncResult() = object:  PrimaryDeferred<T> {
     private lateinit var value: T
     private var onDone: ((T) -> Unit)? = null
 
-    override fun done(callback: (T) -> Unit): Deferred<T> {
+    override fun done(callback: (T) -> Unit): PrimaryDeferred<T> {
         onDone = callback
         return this
     }
 
-    override fun resolve(data: T): Deferred<T> {
+    override fun resolve(data: T): PrimaryDeferred<T> {
         value = data
         onDone?.invoke(value)
         return this
@@ -33,7 +33,7 @@ private fun main() = runBlocking {
         12 to "Rene Descartes"
     ).withDefault { "" }
 
-    fun getPerson(id: Int): Deferred<String> {
+    fun getPerson(id: Int): PrimaryDeferred<String> {
         val result = asyncResult<String>()
         GlobalScope.launch {
             delay(1000)
