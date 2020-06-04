@@ -5,34 +5,35 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
-enum class DeferredState(val state: Int) {
-    DEFERRED_PENDING(0),
-    DEFERRED_RESOLVED(1),
-    DEFERRED_REJECTED(2)
-}
 
 interface Deferred<T> {
-    var status: DeferredState
+    var status: Status
     var onDone: ((T) -> Unit)?
     var onFail: ((Throwable) -> Unit)?
 
     val isPending
-        get() = status == DeferredState.DEFERRED_PENDING
+        get() = status == Status.DEFERRED_PENDING
     val isResolved
-        get() = status == DeferredState.DEFERRED_RESOLVED
+        get() = status == Status.DEFERRED_RESOLVED
     val isRejected
-        get() = status == DeferredState.DEFERRED_REJECTED
+        get() = status == Status.DEFERRED_REJECTED
 
     fun done(callback: (T) -> Unit): Deferred<T>
     fun fail(callback: (Throwable) -> Unit): Deferred<T>
     fun resolve(data: T): Deferred<T>
     fun reject(err: Throwable): Deferred<T>
+
+    enum class Status {
+        DEFERRED_PENDING,
+        DEFERRED_RESOLVED,
+        DEFERRED_REJECTED
+    }
 }
 
 private fun <T: Any> deferred() = object: Deferred<T> {
     private lateinit var value: T
     private lateinit var error: Throwable
-    override var status = DeferredState.DEFERRED_PENDING
+    override var status = Deferred.Status.DEFERRED_PENDING
     override var onDone: ((T) -> Unit)? = null
     override var onFail: ((Throwable) -> Unit)? = null
 
@@ -50,14 +51,14 @@ private fun <T: Any> deferred() = object: Deferred<T> {
 
     override fun resolve(data: T): Deferred<T> {
         value = data
-        status = DeferredState.DEFERRED_RESOLVED
+        status = Deferred.Status.DEFERRED_RESOLVED
         onDone?.invoke(value)
         return this
     }
 
     override fun reject(err: Throwable): Deferred<T> {
         error = err
-        status = DeferredState.DEFERRED_REJECTED
+        status = Deferred.Status.DEFERRED_REJECTED
         onFail?.invoke(error)
         return this
     }
