@@ -24,9 +24,9 @@ Implementation of [Asynchronous Programming](https://github.com/HowProgrammingWo
     - [x] [RevealingConstructor](src/main/kotlin/RevealingConstructor);
     - [x] Used in [Collector/3-class.kt](src/main/kotlin/Collector/3-class.kt);
 - [Futures](https://youtu.be/22ONv3AGXdk):
-    - [ ] Future;
+    - [x] [Future](src/main/kotlin/Future);
 - [Deferred](https://youtu.be/a2fVA1o-ovM):
-    - [ ] Deferred;
+    - [x] [Deferred](src/main/kotlin/Deferred);
     - [x] Used as part of [kotlinx.coroutines](https://github.com/Kotlin/kotlinx.coroutines) instead of Promises in most cases;
 - [Actor Model](https://youtu.be/xp5MVKEqxY4):
     - [ ] ActorModel;
