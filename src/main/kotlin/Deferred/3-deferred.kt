@@ -14,7 +14,7 @@ enum class DeferredState(val state: Int) {
 interface Deferred<T> {
     var status: DeferredState
     var onDone: ((T) -> Unit)?
-    var onFail: ((T) -> Unit)?
+    var onFail: ((Throwable) -> Unit)?
 
     val isPending
         get() = status == DeferredState.DEFERRED_PENDING
@@ -24,16 +24,17 @@ interface Deferred<T> {
         get() = status == DeferredState.DEFERRED_REJECTED
 
     fun done(callback: (T) -> Unit): Deferred<T>
-    fun fail(callback: (T) -> Unit): Deferred<T>
+    fun fail(callback: (Throwable) -> Unit): Deferred<T>
     fun resolve(data: T): Deferred<T>
-    fun reject(data: T): Deferred<T>
+    fun reject(err: Throwable): Deferred<T>
 }
 
 private fun <T: Any> deferred() = object: Deferred<T> {
     private lateinit var value: T
+    private lateinit var error: Throwable
     override var status = DeferredState.DEFERRED_PENDING
     override var onDone: ((T) -> Unit)? = null
-    override var onFail: ((T) -> Unit)? = null
+    override var onFail: ((Throwable) -> Unit)? = null
 
     override fun done(callback: (T) -> Unit): Deferred<T> {
         onDone = callback
@@ -41,9 +42,9 @@ private fun <T: Any> deferred() = object: Deferred<T> {
         return this
     }
 
-    override fun fail(callback: (T) -> Unit): Deferred<T> {
+    override fun fail(callback: (Throwable) -> Unit): Deferred<T> {
         onFail = callback
-        if (isRejected) callback(value)
+        if (isRejected) callback(error)
         return this
     }
 
@@ -54,10 +55,10 @@ private fun <T: Any> deferred() = object: Deferred<T> {
         return this
     }
 
-    override fun reject(data: T): Deferred<T> {
-        value = data
+    override fun reject(err: Throwable): Deferred<T> {
+        error = err
         status = DeferredState.DEFERRED_REJECTED
-        onFail?.invoke(value)
+        onFail?.invoke(error)
         return this
     }
 }
@@ -74,7 +75,7 @@ private fun main() = runBlocking {
         GlobalScope.launch {
             delay(1000)
             if (persons.getValue(id) != "") result.resolve(persons.getValue(id))
-            else result.reject("Can't find that person")
+            else result.reject(Error("Can't find that file"))
         }
         return result
     }
