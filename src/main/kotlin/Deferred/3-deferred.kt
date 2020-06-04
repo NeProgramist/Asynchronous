@@ -1,15 +1,9 @@
 package Deferred
 
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-
+import kotlinx.coroutines.*
 
 interface Deferred<T> {
     var status: Status
-    var onDone: ((T) -> Unit)?
-    var onFail: ((Throwable) -> Unit)?
 
     val isPending
         get() = status == Status.DEFERRED_PENDING
@@ -34,8 +28,8 @@ private fun <T: Any> deferred() = object: Deferred<T> {
     private lateinit var value: T
     private lateinit var error: Throwable
     override var status = Deferred.Status.DEFERRED_PENDING
-    override var onDone: ((T) -> Unit)? = null
-    override var onFail: ((Throwable) -> Unit)? = null
+    private var onDone: ((T) -> Unit)? = null
+    private var onFail: ((Throwable) -> Unit)? = null
 
     override fun done(callback: (T) -> Unit): Deferred<T> {
         onDone = callback
