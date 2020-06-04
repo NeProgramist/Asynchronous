@@ -1,16 +1,13 @@
 package Deferred
 
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 
 interface PrimaryDeferred<T> {
     fun done(callback: (T) -> Unit): PrimaryDeferred<T>
     fun resolve(data: T): PrimaryDeferred<T>
 }
 
-private fun <T: Any> asyncResult() = object:  PrimaryDeferred<T> {
+private fun <T: Any> asyncResult() = object: PrimaryDeferred<T> {
     private lateinit var value: T
     private var onDone: ((T) -> Unit)? = null
 
