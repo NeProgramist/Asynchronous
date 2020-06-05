@@ -6,16 +6,16 @@ typealias Errback<T> = (Error?, T) -> Unit
 open class Task(val name: String, val interval: Long)
 
 open class Queue<T: Task>(
-    private val concurrency: Int,
-    private val scope: CoroutineScope = GlobalScope
+    protected val concurrency: Int,
+    protected val scope: CoroutineScope = GlobalScope
 ) {
     var count = 0
     val waiting = mutableListOf<T>()
-    private var onDone: ((Throwable?, T) -> Unit)? = null
-    private var onDrain: (() -> Unit)? = null
-    private var onProcess: (suspend (T, Errback<T>) -> Unit)? = null
-    private var onSuccess: ((T) -> Unit)? = null
-    private var onFailure: ((Throwable) -> Unit)? = null
+    protected var onDone: ((Throwable?, T) -> Unit)? = null
+    protected var onDrain: (() -> Unit)? = null
+    protected var onProcess: (suspend (T, Errback<T>) -> Unit)? = null
+    protected var onSuccess: ((T) -> Unit)? = null
+    protected var onFailure: ((Throwable, T) -> Unit)? = null
 
     open fun add(task: T) {
         if (count < concurrency) {
@@ -29,7 +29,7 @@ open class Queue<T: Task>(
         count++
         scope.launch {
             onProcess?.invoke(task) { error, task ->
-                if (error != null) onFailure?.invoke(error)
+                if (error != null) onFailure?.invoke(error, task)
                 else onSuccess?.invoke(task)
 
                 onDone?.invoke(error, task)
@@ -59,7 +59,7 @@ open class Queue<T: Task>(
         return this
     }
 
-    fun failure(listener: (Throwable) -> Unit): Queue<T> {
+    open fun failure(listener: (Throwable, T) -> Unit): Queue<T> {
         onFailure = listener
         return this
     }
@@ -84,7 +84,7 @@ private fun main() = runBlocking {
             else println("Done: ${task.name}, count: $count, waiting: ${waiting.size}")
         }
         success { println("Success: ${it.name}") }
-        failure { println("Failure: $it") }
+        failure { err, _ -> println("Failure: $err") }
         drain { println("Queue drain") }
     }
 
