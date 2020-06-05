@@ -88,7 +88,7 @@ open class TimeoutQueue<T: TimedTask>(
         next(task)
     }
 
-    protected fun finish(error: Throwable? = null, task: T) {
+    protected open fun finish(error: Throwable? = null, task: T) {
         if (error != null) onFailure?.invoke(error, task)
         else onSuccess?.invoke(task)
         onDone?.invoke(error, task)
