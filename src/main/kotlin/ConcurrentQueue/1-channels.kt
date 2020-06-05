@@ -5,7 +5,7 @@ import kotlinx.coroutines.*
 typealias Errback<T> = (Error?, T) -> Unit
 open class Task(val name: String, val interval: Long)
 
-class Queue(
+open class Queue(
     private val concurrency: Int,
     private val scope: CoroutineScope = GlobalScope
 ) {
@@ -17,7 +17,7 @@ class Queue(
     private var onSuccess: ((Task) -> Unit)? = null
     private var onFailure: ((Throwable) -> Unit)? = null
 
-    fun add(task: Task) {
+    open fun add(task: Task) {
         if (count < concurrency) {
             next(task)
             return
@@ -25,7 +25,7 @@ class Queue(
         waiting.add(task)
     }
 
-    fun next(task: Task) {
+    open fun next(task: Task) {
         count++
         scope.launch {
             onProcess?.invoke(task) { error, task ->
