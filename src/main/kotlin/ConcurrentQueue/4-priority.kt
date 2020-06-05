@@ -12,9 +12,7 @@ open class PriorityTask(
     startTime: LocalDateTime = LocalDateTime.MIN,
     waitTimeout: Long = Long.MAX_VALUE,
     val priority: Int = 0
-): TimedTask(name, interval, startTime, waitTimeout)  {
-    override fun toString(): String = name
-}
+): TimedTask(name, interval, startTime, waitTimeout)
 
 class PriorityQueue<T: PriorityTask>(
     concurrency: Int,
@@ -48,7 +46,7 @@ private fun main() = runBlocking {
         priority()
         done { error, task ->
             if (error != null) println("Done with error: $error")
-            else println("Done: ${task.name}, count: $count, waiting: ${waiting.size}")
+            else println("Done: $task, count: $count, waiting: ${waiting.size}")
         }
         drain { println("Queue drain") }
     }
