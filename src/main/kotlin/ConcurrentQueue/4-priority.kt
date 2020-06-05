@@ -14,7 +14,7 @@ open class PriorityTask(
     val priority: Int = 0
 ): TimedTask(name, interval, startTime, waitTimeout)
 
-class PriorityQueue<T: PriorityTask>(
+open class PriorityQueue<T: PriorityTask>(
     concurrency: Int,
     scope: CoroutineScope = GlobalScope
 ): TimeoutQueue<T>(concurrency, scope) {
