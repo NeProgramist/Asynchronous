@@ -7,7 +7,7 @@ open class SuspendQueue<T: TimedTask>(
     concurrency: Int,
     scope: CoroutineScope = GlobalScope
 ): TimeoutQueue<T>(concurrency, scope) {
-    var paused = false
+    protected var paused = false
     protected val hasChannel: Boolean
         get() = count < this.concurrency
 
