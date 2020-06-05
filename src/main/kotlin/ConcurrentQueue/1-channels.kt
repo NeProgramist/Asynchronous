@@ -5,19 +5,19 @@ import kotlinx.coroutines.*
 typealias Errback<T> = (Error?, T) -> Unit
 open class Task(val name: String, val interval: Long)
 
-open class Queue(
+open class Queue<T: Task>(
     private val concurrency: Int,
     private val scope: CoroutineScope = GlobalScope
 ) {
     var count = 0
-    val waiting = mutableListOf<Task>()
-    private var onDone: ((Throwable?, Task) -> Unit)? = null
+    val waiting = mutableListOf<T>()
+    private var onDone: ((Throwable?, T) -> Unit)? = null
     private var onDrain: (() -> Unit)? = null
-    private var onProcess: (suspend (Task, Errback<Task>) -> Unit)? = null
-    private var onSuccess: ((Task) -> Unit)? = null
+    private var onProcess: (suspend (T, Errback<T>) -> Unit)? = null
+    private var onSuccess: ((T) -> Unit)? = null
     private var onFailure: ((Throwable) -> Unit)? = null
 
-    open fun add(task: Task) {
+    open fun add(task: T) {
         if (count < concurrency) {
             next(task)
             return
@@ -25,7 +25,7 @@ open class Queue(
         waiting.add(task)
     }
 
-    open fun next(task: Task) {
+    open fun next(task: T) {
         count++
         scope.launch {
             onProcess?.invoke(task) { error, task ->
@@ -44,27 +44,27 @@ open class Queue(
         }
     }
 
-    fun process(listener: suspend (Task, Errback<Task>) -> Unit): Queue {
+    fun process(listener: suspend (T, Errback<T>) -> Unit): Queue<T> {
         onProcess = listener
         return this
     }
 
-    fun done(listener: (Throwable?, Task) -> Unit): Queue {
+    fun done(listener: (Throwable?, T) -> Unit): Queue<T> {
         onDone = listener
         return this
     }
 
-    fun success(listener: (Task) -> Unit): Queue {
+    fun success(listener: (T) -> Unit): Queue<T> {
         onSuccess = listener
         return this
     }
 
-    fun failure(listener: (Throwable) -> Unit): Queue {
+    fun failure(listener: (Throwable) -> Unit): Queue<T> {
         onFailure = listener
         return this
     }
 
-    fun drain(listener: () -> Unit): Queue {
+    fun drain(listener: () -> Unit): Queue<T> {
         onDrain = listener
         return this
     }
@@ -77,7 +77,7 @@ private fun main() = runBlocking {
         next(null, task)
     }
 
-    val queue = Queue(3).apply {
+    val queue = Queue<Task>(3).apply {
         process(::job)
         done { error, task ->
             if (error != null) println("Done with error: $error")
