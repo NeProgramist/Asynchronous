@@ -77,15 +77,17 @@ open class TimeoutQueue<T: TimedTask>(
     protected fun shiftTask() = waiting.removeAt(0)
 
     protected open fun takeNext() {
-        val task = shiftTask()
+        if (waiting.size != 0) {
+            val task = shiftTask()
 
-        if (task isExpiredBy now) {
-            finish(Error("Waiting timed out"), task)
-            if (waiting.isNotEmpty()) takeNext()
-            return
+            if (task isExpiredBy now) {
+                finish(Error("Waiting timed out"), task)
+                if (waiting.isNotEmpty()) takeNext()
+                return
+            }
+
+            next(task)
         }
-
-        next(task)
     }
 
     protected open fun finish(error: Throwable? = null, task: T) {
