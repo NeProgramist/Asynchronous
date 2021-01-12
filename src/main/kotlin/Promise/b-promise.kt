@@ -1,6 +1,10 @@
 package Promise
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 
 open class Promise<T>(
     private val scope: CoroutineScope = GlobalScope,
@@ -11,24 +15,37 @@ open class Promise<T>(
     private var status: Status = Status.PENDING
     private val resolvers = mutableListOf<suspend (T) -> Unit>()
     private val catchers = mutableListOf<suspend (Throwable) -> Unit>()
+    private val finalizers = mutableListOf<suspend (Pair<T?, Throwable?>) -> Unit>()
     private val job = scope.launch { cb(this@Promise::resolve, this@Promise::reject) }
 
     fun resolve(value: T) {
         if (status != Status.PENDING) return
-        status = Status.RESOLVED
-        data = value
+        synchronized(this) {
+            if (status != Status.PENDING) return
+            status = Status.RESOLVED
+            data = value
+        }
         resolvers.forEach {
             runResolver(it)
+        }
+        finalizers.forEach {
+            runFinalizer(it)
         }
     }
 
     fun reject(reason: Throwable) {
         if (status != Status.PENDING) return
-        if (job.isActive) job.cancel()
-        status = Status.REJECTED
-        error = reason
+        synchronized(this) {
+            if (status != Status.PENDING) return
+            if (job.isActive) job.cancel()
+            status = Status.REJECTED
+            error = reason
+        }
         catchers.forEach {
             runCatcher(it)
+        }
+        finalizers.forEach {
+            runFinalizer(it)
         }
     }
 
@@ -41,10 +58,13 @@ open class Promise<T>(
         return this
     }
 
-    fun <K> after(f: (T) -> Promise<K>): Promise<K> = Promise { resolve, reject ->
-        then { data -> f(data)
-            .then { resolve(it) }
-            .catch { reject(it)  }
+    fun <K> after(f: suspend (T) -> K): Promise<K> = Promise { resolve, reject ->
+        then { data ->
+            try {
+                resolve(f(data))
+            } catch (e: Throwable) {
+                reject(e)
+            }
         }
     }
 
@@ -57,6 +77,22 @@ open class Promise<T>(
         return this
     }
 
+    fun finally(f: suspend (Pair<T?, Throwable?>) -> Unit): Promise<T> {
+        when (status) {
+            Status.PENDING -> finalizers.add(f)
+            else -> runFinalizer(f)
+        }
+        return this
+    }
+
+    suspend fun await() {
+        val signal = Channel<Boolean>()
+        finally {
+            signal.send(true)
+        }
+        signal.receive()
+    }
+
     override fun toString() = when(status) {
         Status.RESOLVED -> "[Promise: Resolved { $data }]"
         Status.REJECTED -> "[Promise: Rejected { $error}]"
@@ -65,6 +101,9 @@ open class Promise<T>(
 
     private fun runResolver(f: suspend (T) -> Unit) = scope.launch { data?.let { f(it) } }
     private fun runCatcher(f: suspend (Throwable) -> Unit) = scope.launch { error?.let { f(it) } }
+    private fun runFinalizer(f: suspend (Pair<T?, Throwable?>) -> Unit) = scope.launch {
+        f(data to error)
+    }
 
     enum class Status {
         RESOLVED,
@@ -76,34 +115,43 @@ open class Promise<T>(
         fun <T> resolve(value: T) = Promise<T> { _, _ -> }.apply { resolve(value) }
         fun reject(error: Error) = Promise<Nothing> { _, _ -> }.apply { reject(error) }
 
+        private fun Array<out Promise<*>>.rejectAll(error: Throwable, cb: () -> Unit) {
+            cb()
+            forEach { it.reject(error) }
+        }
+
         fun <T> all(vararg promises: Promise<T>) = Promise<List<T>> { resolve, reject ->
-            val results = mutableListOf<T>()
-            val count = promises.size
+            val channel = Channel<T>(promises.size)
 
-            suspend fun resolveOne(data: T) = results.let {
-                it.add(data)
-                if (it.size == count) resolve(it)
+            promises.forEach {
+                it.then(channel::send)
+                it.catch { error -> promises.rejectAll(error) {
+                    channel.cancel()
+                    reject(error)
+                }}
             }
 
-            suspend fun rejectOne(error: Throwable) {
-                reject(error)
-                promises.forEach { it.reject(error) }
-            }
-
-            promises.forEach { it.then(::resolveOne).catch(::rejectOne) }
+            resolve(List(promises.size) {
+                channel.receive()
+            })
         }
 
         fun <T> race(vararg promises: Promise<T>) = Promise<T> { resolve, reject ->
-            suspend fun resolveOne(data: T) {
-                resolve(data)
-                promises.forEach { it.reject(Error("Lost race")) }
-            }
-            suspend fun rejectAll(reason: Throwable) {
-                reject(reason)
-                promises.forEach { it.reject(reason) }
+            val channel = Channel<T>()
+
+            promises.forEach {
+                it.then(channel::send)
+                it.catch { error -> promises.rejectAll(error) {
+                    channel.cancel()
+                    reject(error)
+                }}
             }
 
-            promises.forEach { it.then(::resolveOne).catch(::rejectAll) }
+            val res = channel.receive()
+            promises.forEach {
+                it.reject(Error("Lost race"))
+            }
+            resolve(res)
         }
     }
 }

@@ -4,6 +4,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
+import kotlin.concurrent.thread
 
 private fun testGeneral() = runBlocking {
     val promise = Promise<String> { resolve, _ ->
@@ -12,14 +13,16 @@ private fun testGeneral() = runBlocking {
     }.then {
         delay(500)
         println("I've resolved with: $it")
+    }.then {
+        println("Another one then: $it")
+    }.catch {
+        println("I've caught $it")
     }
-        .then { println("Another one then: $it") }
-        .catch { println("I've caught $it") }
 
 //    promise.reject(Error("Rejected"))
 
     println(promise)
-    delay(6000)
+    promise.await()
     println(promise)
 }
 
@@ -40,28 +43,71 @@ private fun testAfter() = runBlocking {
     promise.catch { println(it.message) }
     promise.after { code ->
         println(code)
-        Promise<Int> { resolve, _ ->
-            delay(1000L)
-            val n = code
-                .split(' ')
-                .count { word -> word.contains("promise", ignoreCase = true) }
-            resolve(n)
-        }
+        delay(1000L)
+        code.split(' ').count { w -> w.contains("promise", ignoreCase = true) }
     }.after { number ->
         println("Number of words \"promise\" in code: $number")
-        Promise<Boolean> { resolve, reject ->
-            delay(600)
-            if (number < 20) {
-                reject(Exception("Not enough promises"))
-            } else resolve(true)
-        }
+        delay(600L)
+        if (number < 20) error("Not enough promises")
+        else true
     }.then {
         println("Enough promises: $it")
     }.catch {
-        println(it.message)
+        println("Error: ${it.message}")
+    }.finally {
+        println("Promise is over")
+    }.await()
+}
+
+fun testAll() = runBlocking {
+    val promises = Array(10) {
+        Promise<Int> { resolve, reject ->
+            delay(100L)
+//            if (it == 9) reject(Error("Must reject"))
+            resolve(it)
+        }
+    }
+    Promise.all(*promises)
+        .then {
+            println("Everybody resolved: $it")
+        }.catch {
+            println("At least one rejected: ${it.message}")
+        }.await()
+}
+
+fun testRace() = runBlocking {
+    val promises = Array(10) {
+        Promise<Int> { resolve, reject ->
+            if (it % 2 != 0) {
+//                delay(100L)
+                reject(Error("Must reject"))
+            } else {
+//                delay(500L)
+                resolve(it)
+            }
+        }
     }
 
-    delay(2001L)
+    Promise.race(*promises)
+        .then {
+            println("First resolved: $it")
+        }.catch {
+            println("First rejected: ${it.message}")
+        }.await()
+
+}
+
+fun testMultithreading() = runBlocking {
+    Promise<Int> { resolve, reject ->
+        List(4) {
+            thread {
+                Thread.sleep(1000L)
+                resolve(it)
+            }
+        }.forEach(Thread::run)
+    }.then {
+        println("Resolved: $it")
+    }.await()
 }
 
 // Usage
@@ -69,4 +115,7 @@ private fun main() {
     testGeneral()
     testImmediate()
     testAfter()
+    testAll()
+    testRace()
+    testMultithreading()
 }
